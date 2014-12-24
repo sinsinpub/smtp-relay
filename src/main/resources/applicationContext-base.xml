@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:aop="http://www.springframework.org/schema/aop"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/context
+    http://www.springframework.org/schema/context/spring-context.xsd
+    http://www.springframework.org/schema/aop 
+    http://www.springframework.org/schema/aop/spring-aop.xsd">
+
+    <bean id="propertyConfigurer"
+        class="com.github.sinsinpub.smtp.relay.context.EncodablePropertyPlaceholderConfigurer">
+        <property name="locations">
+            <list>
+                <value>classpath:default.properties</value>
+                <value>file:etc/config.properties</value>
+            </list>
+        </property>
+        <property name="doIterating" value="false" />
+        <property name="ignoreResourceNotFound" value="true" />
+        <property name="ignoreUnresolvablePlaceholders" value="true" />
+        <property name="localOverride" value="true" />
+    </bean>
+
+    <bean id="jmxAnnotationMbeanExporter" class="org.springframework.jmx.export.MBeanExporter">
+        <property name="server" ref="jmxMbeanServer" />
+        <property name="assembler" ref="jmxMetadataAssembler" />
+        <property name="namingStrategy" ref="jmxAutoPathNamingStrategy" />
+        <property name="autodetect" value="true" />
+        <property name="registrationBehaviorName" value="REGISTRATION_IGNORE_EXISTING" />
+    </bean>
+
+    <bean id="jmxAttributeSource"
+        class="org.springframework.jmx.export.annotation.AnnotationJmxAttributeSource">
+    </bean>
+
+    <bean id="jmxMetadataAssembler"
+        class="org.springframework.jmx.export.assembler.MetadataMBeanInfoAssembler">
+        <property name="attributeSource" ref="jmxAttributeSource" />
+    </bean>
+
+    <bean id="jmxAutoPathNamingStrategy"
+        class="org.springframework.jmx.export.naming.MetadataNamingStrategy">
+        <property name="attributeSource" ref="jmxAttributeSource" />
+    </bean>
+
+</beans>

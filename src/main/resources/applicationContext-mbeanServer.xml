@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/context
+    http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <bean id="jmxRmiRegistry"
+        class="org.springframework.remoting.rmi.RmiRegistryFactoryBean">
+        <property name="port" value="${jmx.rmi.port:1029}" />
+    </bean>
+
+    <bean id="jmxMbeanServer"
+        class="org.springframework.jmx.support.MBeanServerFactoryBean"
+        depends-on="jmxRmiRegistry">
+        <property name="locateExistingServerIfPossible" value="true" />
+        <property name="agentId" value="" />
+    </bean>
+
+    <bean id="jmxRmiConnectorServer"
+        class="org.springframework.jmx.support.ConnectorServerFactoryBean">
+        <property name="server" ref="jmxMbeanServer" />
+        <property name="serviceUrl"
+            value="service:jmx:rmi://${jmx.server.host:localhost}:${jmx.server.port}/jndi/rmi://${jmx.rmi.host:localhost}:${jmx.rmi.port:1028}/jmxrmi" />
+        <property name="registrationBehaviorName" value="REGISTRATION_IGNORE_EXISTING" />
+        <property name="threaded" value="true" />
+        <property name="daemon" value="true" />
+    </bean>
+
+</beans>

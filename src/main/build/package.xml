@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<assembly
+	xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0 http://maven.apache.org/xsd/assembly-1.1.0.xsd">
+
+	<id>bin</id>
+
+	<formats>
+		<format>tar</format>
+	</formats>
+
+	<baseDirectory>${project.artifactId}</baseDirectory>
+
+	<files>
+		<file>
+			<source>target/${project.build.finalName}.jar</source>
+			<destName>${project.artifactId}.jar</destName>
+			<outputDirectory>/</outputDirectory>
+		</file>
+	</files>
+
+	<fileSets>
+		<fileSet>
+			<directory>src/main/build/etc</directory>
+			<outputDirectory>/etc</outputDirectory>
+			<lineEnding>unix</lineEnding>
+			<filtered>true</filtered>
+		</fileSet>
+		<fileSet>
+			<directory>src/main/build/log</directory>
+			<outputDirectory>/log</outputDirectory>
+		</fileSet>
+		<fileSet>
+			<directory>src/main/build/bin</directory>
+			<includes>
+				<include>*.sh</include>
+			</includes>
+			<outputDirectory>/</outputDirectory>
+			<lineEnding>unix</lineEnding>
+			<fileMode>0755</fileMode>
+			<filtered>true</filtered>
+		</fileSet>
+		<fileSet>
+			<directory>src/main/build/bin</directory>
+			<includes>
+				<include>*.bat</include>
+			</includes>
+			<outputDirectory>/</outputDirectory>
+			<lineEnding>dos</lineEnding>
+			<filtered>true</filtered>
+		</fileSet>
+        <fileSet>
+            <directory>src/main/build/doc</directory>
+            <excludes>
+                <exclude>README*</exclude>
+            </excludes>
+            <outputDirectory>/licenses</outputDirectory>
+            <filtered>true</filtered>
+        </fileSet>
+		<fileSet>
+			<directory>src/main/build/doc</directory>
+            <includes>
+                <include>README*</include>
+            </includes>
+			<outputDirectory>/</outputDirectory>
+			<filtered>true</filtered>
+		</fileSet>
+	</fileSets>
+	<dependencySets>
+		<dependencySet>
+			<outputDirectory>/lib</outputDirectory>
+		</dependencySet>
+	</dependencySets>
+</assembly>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/context
+    http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <bean id="smtpListener"
+        class="com.github.sinsinpub.smtp.relay.core.impl.SmtpListener">
+        <property name="listenPort" value="${smtp.listener.port:2025}" />
+        <property name="forwarderCnt" value="${smtp.forwarder.executor.count:-1}" />
+        <property name="forwarderFactory"
+            ref="${smtp.forwarder.factory.name:simpleRelayForwarderFactory}" />
+        <property name="myDomain" value="${smtp.forwarder.my.domain:}" />
+        <property name="allowedFrom" value="${smtp.forwarder.allow.from:}" />
+        <property name="allowedTo" value="${smtp.forwarder.allow.to:}" />
+    </bean>
+
+</beans>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration debug="false">
+
+    <property file="etc/log.properties" />
+
+    <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>[%d{yyMMdd HH:mm:ss}][%17.17c{0}][%5.5p] %m%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="AllFile"
+        class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <encoder>
+            <pattern>ALL|%d{yyyyMMdd HH:mm:ss.SSS}|%17.17t|%5.5p| %m%n</pattern>
+        </encoder>
+        <file>${file.output.location:-log}/all.log</file>
+        <rollingPolicy
+            class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+            <fileNamePattern>${file.output.location:-log}/all.%i.log</fileNamePattern>
+            <minIndex>1</minIndex>
+            <maxIndex>${roll.window.max:-3}</maxIndex>
+        </rollingPolicy>
+        <triggeringPolicy
+            class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <maxFileSize>${roll.window.size:-10MB}</maxFileSize>
+        </triggeringPolicy>
+    </appender>
+
+    <appender name="ErrorFile"
+        class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <encoder>
+            <pattern>ERR|%d{yyyyMMdd HH:mm:ss.SSS}|%17.17t|%5.5p| %m &lt;%C:%L&gt;%n</pattern>
+        </encoder>
+        <file>${file.output.location:-log}/error.log</file>
+        <rollingPolicy
+            class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${file.output.location:-log}/error.log.%d{yyyy-MM-dd}.gz</fileNamePattern>
+            <maxHistory>${error.max.history:-15}</maxHistory>
+        </rollingPolicy>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+    </appender>
+
+    <logger name="com.github.sinsinpub" level="${daemon.logger.level:-INFO}" />
+    <logger name="org.subethamail.smtp" level="${daemon.logger.level:-INFO}" />
+
+    <root level="${root.logger.level:-WARN}">
+        <appender-ref ref="Console" />
+        <appender-ref ref="AllFile" />
+        <appender-ref ref="ErrorFile" />
+    </root>
+
+    <jmxConfigurator />
+
+</configuration>

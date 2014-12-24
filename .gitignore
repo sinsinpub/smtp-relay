@@ -1,0 +1,17 @@
+# For Java maven2/3 archetype in Eclipse
+
+.settings
+.project
+.classpath
+/target
+/bin
+/etc
+/log
+
+# For IntelliJ Idea
+*.iml
+*.ipr
+.idea
+
+# For MacOSX
+.DS_Store

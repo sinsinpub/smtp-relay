@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <bean id="simpleRelayForwarderFactory"
+        class="com.github.sinsinpub.smtp.relay.core.impl.FromAddressRelayForwarderFactory">
+        <property name="fromAddressDeliverRules" value="${forwarder.from.address.delivering:}" />
+        <property name="defaultSession"
+            ref="${forwarder.factory.default.session.name:defaultSmtpPlaintext}" />
+        <property name="retryTimes"
+            value="${forwarder.factory.command.retry.times:3}" />
+        <property name="retryStartingWaitMillis"
+            value="${forwarder.factory.command.retry.startingWaitMillis:3000}" />
+        <property name="retryWaitTimeIncrementMillis"
+            value="${forwarder.factory.command.retry.waitTimeIncrementMillis:5000}" />
+    </bean>
+
+    <bean id="defaultSmtpPlaintext"
+        class="com.github.sinsinpub.smtp.relay.context.MailSessionFactory">
+        <property name="singleton" value="true" />
+        <property name="properties">
+            <props>
+                <prop key="mail.smtp.host">${forwarder.mail.session.smtp.host}
+                </prop>
+                <prop key="mail.smtp.port">${forwarder.mail.session.smtp.port:25}
+                </prop>
+                <prop key="mail.smtp.auth">${forwarder.mail.session.smtp.auth}
+                </prop>
+            </props>
+        </property>
+        <property name="authenticator">
+            <bean
+                class="com.github.sinsinpub.smtp.relay.context.PlaintextPasswordAuthenticator">
+                <property name="username"
+                    value="${forwarder.mail.session.smtp.auth.username}" />
+                <property name="password"
+                    value="${forwarder.mail.session.smtp.auth.password}" />
+            </bean>
+        </property>
+    </bean>
+
+    <bean id="defaultSmtpStarttls"
+        class="com.github.sinsinpub.smtp.relay.context.MailSessionFactory">
+        <property name="singleton" value="true" />
+        <property name="properties">
+            <props>
+                <prop key="mail.smtp.host">${forwarder.mail.session.smtp.host}
+                </prop>
+                <prop key="mail.smtp.port">${forwarder.mail.session.smtp.port:587}
+                </prop>
+                <prop key="mail.smtp.starttls.enable">true</prop>
+                <prop key="mail.smtp.ssl.trust">${forwarder.mail.session.smtp.ssl.trust}
+                </prop>
+                <prop key="mail.smtp.auth">${forwarder.mail.session.smtp.auth}
+                </prop>
+            </props>
+        </property>
+        <property name="authenticator">
+            <bean
+                class="com.github.sinsinpub.smtp.relay.context.PlaintextPasswordAuthenticator">
+                <property name="username"
+                    value="${forwarder.mail.session.smtp.auth.username}" />
+                <property name="password"
+                    value="${forwarder.mail.session.smtp.auth.password}" />
+            </bean>
+        </property>
+    </bean>
+
+    <bean id="defaultSmtpSsl"
+        class="com.github.sinsinpub.smtp.relay.context.MailSessionFactory">
+        <property name="singleton" value="true" />
+        <property name="properties">
+            <props>
+                <prop key="mail.smtp.host">${forwarder.mail.session.smtp.host}
+                </prop>
+                <prop key="mail.smtp.port">${forwarder.mail.session.smtp.port:465}
+                </prop>
+                <prop key="mail.smtp.ssl.enable">true</prop>
+                <prop key="mail.smtp.ssl.trust">${forwarder.mail.session.smtp.ssl.trust}
+                </prop>
+                <prop key="mail.smtp.auth">${forwarder.mail.session.smtp.auth}
+                </prop>
+            </props>
+        </property>
+        <property name="authenticator">
+            <bean
+                class="com.github.sinsinpub.smtp.relay.context.PlaintextPasswordAuthenticator">
+                <property name="username"
+                    value="${forwarder.mail.session.smtp.auth.username}" />
+                <property name="password"
+                    value="${forwarder.mail.session.smtp.auth.password}" />
+            </bean>
+        </property>
+    </bean>
+
+</beans>

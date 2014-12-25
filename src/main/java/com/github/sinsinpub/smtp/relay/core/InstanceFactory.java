@@ -137,7 +137,7 @@ public class InstanceFactory implements InstanceFactoryMBean {
     }
 
     public void shutdown() {
-        logger.info("Shutting down application...");
+        logger.info("Shutting down server...");
         instanceProvider.close();
     }
 

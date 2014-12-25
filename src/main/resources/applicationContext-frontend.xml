@@ -8,6 +8,7 @@
 
     <bean id="smtpListener"
         class="com.github.sinsinpub.smtp.relay.core.impl.SmtpListener">
+        <property name="bindAddressByString" value="${smtp.listener.address:}" />
         <property name="listenPort" value="${smtp.listener.port:2025}" />
         <property name="forwarderCnt" value="${smtp.forwarder.executor.count:-1}" />
         <property name="forwarderFactory"

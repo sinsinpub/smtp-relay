@@ -4,13 +4,13 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.github.sinsinpub</groupId>
     <artifactId>smtp-relay</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1</version>
     <name>Simple SMTP Relay Daemon</name>
     <description>
         Simple SMTP email forwarding "Relay" daemon service.
     </description>
     <packaging>jar</packaging>
-    <url>http://TOC</url>
+    <url>https://coding.net/u/sinsin/p/smtp-relay/</url>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -96,23 +96,6 @@
         </dependency>
     </dependencies>
 
-    <repositories>
-        <repository>
-            <id>artifactory-releases</id>
-            <url>http://10.103.118.142:7070/artifactory/libs-releases</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-        <repository>
-            <id>artifactory-snapshots</id>
-            <url>http://10.103.118.142:7070/artifactory/libs-snapshots</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-        </repository>
-    </repositories>
-
     <licenses>
         <license>
             <name>Apache License 2.0</name>
@@ -128,8 +111,8 @@
         </license>
     </licenses>
     <scm>
-        <connection>scm:svn:https://TOC</connection>
-        <url>https://TOC</url>
+        <connection>scm:git:https://coding.net/sinsin/smtp-relay.git</connection>
+        <url>https://coding.net/sinsin/smtp-relay.git</url>
     </scm>
 
     <developers>

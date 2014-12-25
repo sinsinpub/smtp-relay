@@ -63,7 +63,7 @@ public class FromAddressRelayForwarderFactory implements
     protected final ConcurrentMap<String, AtomicLong> numForwardingException = new ConcurrentHashMap<String, AtomicLong>();
 
     /**
-     * Default empty constructor. 
+     * Default empty constructor.
      */
     public FromAddressRelayForwarderFactory() {
         super();
@@ -100,14 +100,14 @@ public class FromAddressRelayForwarderFactory implements
             backendSession = sessionMap.get(DEFAULT_ADDRESS_WILDCARD);
             if (backendSession == null) {
                 // Also mark down failed forwarding
-                ConcurrentUtil.incrementLong(numForwarded, "<null>");
+                ConcurrentUtil.incrementLong(numForwarded, String.valueOf(null));
                 throw new IllegalStateException(
                         "No matched rule to forward mail from " + from);
             }
         }
         logger.info("Building forwarder for {} with session {{}}", from,
                 matchedRule + ADDRESS_SESSION_DELIM + backendSession.toString());
-        ConcurrentUtil.incrementLong(numForwarded, matchedRule);
+        ConcurrentUtil.incrementLong(numForwarded, String.valueOf(matchedRule));
         SimpleRelayCommand command = new SimpleRelayCommand(
         // The mail context to be forwarded
                 mailContext,
@@ -119,6 +119,7 @@ public class FromAddressRelayForwarderFactory implements
                 new AdditiveWaitRetryStrategy(getRetryTimes(),
                         getRetryStartingWaitMillis(),
                         getRetryWaitTimeIncrementMillis()));
+        // For exception counting
         command.setSessionName(matchedRule);
         command.setExceptionCounter(numForwardingException);
         return command;

@@ -91,7 +91,7 @@ final class SimpleRelayCommand implements MailForwardCommand {
     private void incrementExceptionCount() {
         if (exceptionCounter != null) {
             ConcurrentUtil.incrementLong(exceptionCounter,
-                    mtaName == null ? "<null>" : mtaName);
+                    String.valueOf(mtaName));
         }
     }
 
@@ -103,6 +103,11 @@ final class SimpleRelayCommand implements MailForwardCommand {
         }
         if (mta == null) {
             logger.error("No backend mail transport agent session configured correctly, stop forwarding");
+            incrementExceptionCount();
+            return;
+        }
+        if (retryStrategy == null) {
+            logger.error("No retry strategy instance configured correctly, stop forwarding");
             incrementExceptionCount();
             return;
         }

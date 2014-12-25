@@ -11,8 +11,14 @@ import com.github.sinsinpub.smtp.relay.context.MailContext;
  */
 public interface MailForwardCommand extends Runnable {
 
+    /**
+     * @param mail The mail message context to be forwarded
+     */
     void setMail(MailContext mail);
 
+    /**
+     * @param session The session of back-end mail server used to forward message
+     */
     void setMailSession(Session session);
 
 }

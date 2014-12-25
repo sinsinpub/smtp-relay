@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -15,6 +16,7 @@ import javax.annotation.concurrent.ThreadSafe;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -87,12 +89,16 @@ public class SmtpListener implements SimpleMessageListener, Lifecycle,
     @Override
     public void afterPropertiesSet() throws Exception {
         initialize();
-        start();
+        if (!isRunning()) {
+            start();
+        }
     }
 
     @Override
     public void destroy() throws Exception {
-        stop();
+        if (isRunning()) {
+            stop();
+        }
         finialize();
     }
 
@@ -206,7 +212,9 @@ public class SmtpListener implements SimpleMessageListener, Lifecycle,
                 baos.toByteArray());
         MailForwardCommand command = null;
         try {
-            command = forwarderFactory.newForwardCommand(received);
+            Validate.notNull(getForwarderFactory(),
+                    "Forwarder factory must not be null");
+            command = getForwarderFactory().newForwardCommand(received);
         } catch (RuntimeException e) {
             logger.error("Forwarder creating failed on " + e.toString(), e);
             throw new IOException("No mail forwarder available", e);
@@ -275,7 +283,7 @@ public class SmtpListener implements SimpleMessageListener, Lifecycle,
     }
 
     @ManagedAttribute
-    public String forwarderFactoryType() {
+    public String getForwarderFactoryType() {
         return ObjectUtil.nullSafeClassCanonicalName(forwarderFactory);
     }
 
@@ -344,6 +352,18 @@ public class SmtpListener implements SimpleMessageListener, Lifecycle,
     public void setBindAddress(InetAddress bindAddress) {
         if (isInitialized()) {
             this.bindAddress = bindAddress;
+        }
+    }
+
+    public void setBindAddressByString(String bindAddress) {
+        if (StringUtils.isNotEmpty(bindAddress)) {
+            try {
+                setBindAddress(InetAddress.getByName(bindAddress));
+            } catch (UnknownHostException e) {
+                throw new IllegalArgumentException(e);
+            }
+        } else {
+            setBindAddress(null);
         }
     }
 

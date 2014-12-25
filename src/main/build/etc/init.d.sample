@@ -1,0 +1,80 @@
+#!/bin/bash
+#
+# /etc/init.d/smtp-relay
+# SYS-V init startup script for smtp-relay.
+# For Linux only, not tested on Unix.
+#
+# @author sin_sin
+### BEGIN INIT INFO
+# Provides:          smtp-relay
+# Required-Start:    $local_fs $network
+# Required-Stop:     $local_fs $network
+# Should-Start:      $named
+# Should-Stop:       $named
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start smtp-relay.
+# Description:       Start SMTP relay daemon.
+### END INIT INFO
+
+# Adjust environment variables here
+NAME="smtp-relay"
+# The user name for workspace
+RUN_AS="user"
+# Change the default value to the path of your JDK/JRE
+JAVA_HOME=${JAVA_HOME:-"/usr/lib/jvm/jre"}
+# Change the default value to the path of your daemon
+DAEMON_HOME=${DAEMON_HOME:-"/opt/smtp-relay"}
+
+# Here goes for runtime variables
+RETVAL=0
+export JAVA_HOME
+export DAEMON_HOME
+cd $DAEMON_HOME
+
+# Functions
+d_start() {
+	su $RUN_AS -c "$DAEMON_HOME/start.sh"
+	RETVAL=$?
+	return $RETVAL
+}
+
+d_stop() {
+	su $RUN_AS -c "$DAEMON_HOME/stop.sh"
+	RETVAL=$?
+	return $RETVAL
+}
+
+d_restart() {
+	su $RUN_AS -c "$DAEMON_HOME/restart.sh"
+	RETVAL=$?
+	return $RETVAL
+}
+
+d_status() {
+	su $RUN_AS -c "$DAEMON_HOME/status.sh"
+	RETVAL=$?
+	return $RETVAL
+}
+
+# Switch cases
+case $1 in
+	start)
+		d_start
+	;;
+	stop)
+		d_stop
+	;;
+	restart)
+		d_restart
+	;;
+	status)
+		d_status
+	;;
+	*)
+		echo "usage: $NAME {start|stop|restart|status}"
+		RETVAL=1
+	;;
+esac
+
+exit $RETVAL

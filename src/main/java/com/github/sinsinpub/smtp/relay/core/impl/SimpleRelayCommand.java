@@ -153,12 +153,11 @@ final class SimpleRelayCommand implements MailForwardCommand {
                                 recipientDump = new File(errDump,
                                         mail.getEnvelopeReceiver());
                             }
-                            if (!recipientDump.exists()) {
-                                if (!recipientDump.mkdir()) {
-                                    throw new IOException(
-                                            "Make new directory failed for "
-                                                    + recipientDump.toString());
-                                }
+                            if (!recipientDump.exists()
+                                    && !recipientDump.mkdir()) {
+                                throw new IOException(
+                                        "Make new directory failed for "
+                                                + recipientDump.toString());
                             }
                             FileOutputStream fos = null;
                             try {

@@ -50,6 +50,8 @@ public class MailerDaemonReplyCleanerTask implements Runnable {
         try {
             doClean();
         } catch (Throwable e) {
+            // Do not throw any exception as default ScheduledExecutorService will
+            // remove the Runnable who throws an exception.
             logger.error(e.toString(), e);
         }
     }

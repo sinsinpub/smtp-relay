@@ -58,7 +58,7 @@
             </bean>
         </property>
         <property name="period"
-            value="${scheduler.mail.reply.cleaner.task.period.1:360000}" />
+            value="${scheduler.mail.reply.cleaner.task.period.1:3600000}" />
         <property name="delay"
             value="${scheduler.mail.reply.cleaner.task.delay.1:10000}" />
     </bean>
@@ -67,6 +67,8 @@
         <property name="daemon" value="true" />
         <property name="poolSize" value="1" />
         <property name="threadNamePrefix" value="ReplyCleaner-" />
+        <property name="continueScheduledExecutionAfterException"
+            value="true" />
         <property name="waitForTasksToCompleteOnShutdown"
             value="false" />
         <property name="scheduledExecutorTasks">
@@ -74,6 +76,10 @@
                 <ref bean="sampleReplyCleanerTask" />
             </list>
         </property>
+    </bean>
+    <bean id="schedulerManager"
+        class="com.github.sinsinpub.smtp.relay.scheduled.ScheduledExecutorServiceMBean">
+        <property name="factoryBean" ref="&schedulerFactoryBean" />
     </bean>
 
 </beans>

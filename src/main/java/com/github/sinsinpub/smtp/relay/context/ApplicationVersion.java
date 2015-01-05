@@ -113,7 +113,7 @@ public class ApplicationVersion implements Serializable, Cloneable {
         }
         if (StringUtils.isNotBlank(scmRevision)
                 && !StringUtils.equals(scmRevision, "${buildNumber}")) {
-            applicationVersion += ".r" + scmRevision;
+            applicationVersion += ".#" + scmRevision;
         }
         String instanceContexts = app.getProperty("instance.contexts");
         if (StringUtils.isNotBlank(instanceContexts)

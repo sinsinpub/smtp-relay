@@ -19,6 +19,15 @@
                 <prop key="mail.smtp.ssl.enable">true</prop>
                 <prop key="mail.smtp.ssl.protocols">TLSv1</prop>
                 <prop key="mail.smtp.ssl.ciphersuites">TLS_DHE_RSA_WITH_AES_256_CBC_SHA</prop>
+
+                <!-- 可选：配置POP3用于清理邮箱 -->
+                <prop key="mail.store.protocol">pop3</prop>
+                <prop key="mail.pop3.host">${scheduler.mail.session.pop3s.host}
+                </prop>
+                <prop key="mail.pop3.port">${scheduler.mail.session.pop3s.port}
+                </prop>
+                <prop key="mail.pop3.auth">true</prop>
+                <prop key="mail.pop3.ssl.enable">true</prop>
             </props>
         </property>
     </bean>
@@ -35,6 +44,35 @@
                 <property name="password"
                     value="${fowarder.mail.session.smtp.auth.password.1}" />
             </bean>
+        </property>
+    </bean>
+
+    <!-- 如果需要定期清理服务端收件箱里的系统自动回复邮件 -->
+    <bean id="sampleReplyCleanerTask"
+        class="org.springframework.scheduling.concurrent.ScheduledExecutorTask">
+        <property name="runnable">
+            <bean id="sampleReplyCleaner"
+                class="com.github.sinsinpub.smtp.relay.scheduled.MailerDaemonReplyCleanerTask">
+                <property name="popSession" ref="sampleSmtps-user1" />
+                <property name="sessionName" value="user1@" />
+            </bean>
+        </property>
+        <property name="period"
+            value="${scheduler.mail.reply.cleaner.task.period.1:360000}" />
+        <property name="delay"
+            value="${scheduler.mail.reply.cleaner.task.delay.1:10000}" />
+    </bean>
+    <bean id="schedulerFactoryBean"
+        class="org.springframework.scheduling.concurrent.ScheduledExecutorFactoryBean">
+        <property name="daemon" value="true" />
+        <property name="poolSize" value="1" />
+        <property name="threadNamePrefix" value="ReplyCleaner-" />
+        <property name="waitForTasksToCompleteOnShutdown"
+            value="false" />
+        <property name="scheduledExecutorTasks">
+            <list>
+                <ref bean="sampleReplyCleanerTask" />
+            </list>
         </property>
     </bean>
 

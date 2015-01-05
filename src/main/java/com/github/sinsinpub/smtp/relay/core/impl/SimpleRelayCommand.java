@@ -2,6 +2,7 @@ package com.github.sinsinpub.smtp.relay.core.impl;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -11,6 +12,7 @@ import javax.mail.Session;
 import javax.mail.Transport;
 import javax.mail.internet.MimeMessage;
 
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -151,10 +153,23 @@ final class SimpleRelayCommand implements MailForwardCommand {
                                 recipientDump = new File(errDump,
                                         mail.getEnvelopeReceiver());
                             }
-                            if (!recipientDump.exists())
-                                recipientDump.mkdir();
-                            failedToSend.writeTo(new FileOutputStream(new File(
-                                    recipientDump, file)));
+                            if (!recipientDump.exists()) {
+                                if (!recipientDump.mkdir()) {
+                                    throw new IOException(
+                                            "Make new directory failed for "
+                                                    + recipientDump.toString());
+                                }
+                            }
+                            FileOutputStream fos = null;
+                            try {
+                                fos = new FileOutputStream(new File(
+                                        recipientDump, file));
+                                failedToSend.writeTo(fos);
+                            } finally {
+                                if (fos != null) {
+                                    IOUtils.closeQuietly(fos);
+                                }
+                            }
                         } catch (Exception fatal) {
                             logger.error(
                                     "Dump mail message error: "

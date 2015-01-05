@@ -31,6 +31,7 @@ import org.subethamail.smtp.server.SMTPServer;
 
 import com.github.sinsinpub.smtp.relay.context.MailContext;
 import com.github.sinsinpub.smtp.relay.core.MailForwardCommand;
+import com.github.sinsinpub.smtp.relay.utils.NameCustomizableThreadFactory;
 import com.github.sinsinpub.smtp.relay.utils.ObjectUtil;
 
 /**
@@ -116,7 +117,8 @@ public class SmtpListener implements SimpleMessageListener, Lifecycle,
         if (threadCnt < 1) {
             threadCnt = Runtime.getRuntime().availableProcessors();
         }
-        this.executorService = Executors.newFixedThreadPool(threadCnt);
+        this.executorService = Executors.newFixedThreadPool(threadCnt,
+                new NameCustomizableThreadFactory("Forwarder-"));
         this.initialized = true;
     }
 

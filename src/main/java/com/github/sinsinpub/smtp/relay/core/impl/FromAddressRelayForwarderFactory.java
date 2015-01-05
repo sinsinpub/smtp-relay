@@ -100,7 +100,7 @@ public class FromAddressRelayForwarderFactory implements
             backendSession = sessionMap.get(DEFAULT_ADDRESS_WILDCARD);
             if (backendSession == null) {
                 // Also mark down failed forwarding
-                ConcurrentUtil.incrementLong(numForwarded, String.valueOf(null));
+                ConcurrentUtil.incrementLong(numForwarded, "null");
                 throw new IllegalStateException(
                         "No matched rule to forward mail from " + from);
             }

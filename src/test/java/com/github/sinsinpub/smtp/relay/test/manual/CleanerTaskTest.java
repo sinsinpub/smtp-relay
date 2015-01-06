@@ -27,7 +27,7 @@ public class CleanerTaskTest {
     @Test
     public void testTaskRunning() throws Exception {
         MailerDaemonReplyCleanerTask task = new MailerDaemonReplyCleanerTask();
-        task.setPopSession(factory.getObject());
+        task.setSession(factory.getObject());
         task.setSessionName(userAddr);
         task.run();
     }

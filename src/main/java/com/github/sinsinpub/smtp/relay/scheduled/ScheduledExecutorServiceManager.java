@@ -1,11 +1,15 @@
 package com.github.sinsinpub.smtp.relay.scheduled;
 
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jmx.export.annotation.ManagedAttribute;
 import org.springframework.jmx.export.annotation.ManagedOperation;
 import org.springframework.jmx.export.annotation.ManagedResource;
 import org.springframework.scheduling.concurrent.ScheduledExecutorFactoryBean;
+import org.springframework.scheduling.concurrent.ScheduledExecutorTask;
+
+import com.github.sinsinpub.smtp.relay.utils.ObjectUtil;
 
 /**
  * A simple pure MBean for managing ScheduledExecutorService
@@ -58,6 +62,23 @@ public class ScheduledExecutorServiceManager {
             logger.info("{}ExecutorService is still running.",
                     getFactoryBean().getThreadNamePrefix());
         }
+    }
+
+    @ManagedOperation
+    public String[] listScheduledTasks() {
+        ScheduledExecutorTask[] tasks = (ScheduledExecutorTask[]) ObjectUtil.getPrivatePropertyValue(
+                getFactoryBean(), "scheduledExecutorTasks");
+        if (null != tasks) {
+            StringBuilder sb = new StringBuilder();
+            for (ScheduledExecutorTask task : tasks) {
+                sb.append(ObjectUtil.nullSafeClassName(task.getRunnable()));
+                sb.append(",").append(task.getPeriod());
+                sb.append(",").append(task.getDelay());
+                sb.append("|");
+            }
+            return StringUtils.split(sb.toString(), "|");
+        }
+        return null;
     }
 
     public ScheduledExecutorFactoryBean getFactoryBean() {

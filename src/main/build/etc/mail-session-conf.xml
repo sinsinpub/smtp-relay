@@ -53,7 +53,7 @@
         <property name="runnable">
             <bean id="sampleReplyCleaner"
                 class="com.github.sinsinpub.smtp.relay.scheduled.MailerDaemonReplyCleanerTask">
-                <property name="popSession" ref="sampleSmtps-user1" />
+                <property name="session" ref="sampleSmtps-user1" />
                 <property name="sessionName" value="user1@" />
             </bean>
         </property>

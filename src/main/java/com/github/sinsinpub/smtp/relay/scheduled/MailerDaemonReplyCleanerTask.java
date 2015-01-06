@@ -3,6 +3,7 @@ package com.github.sinsinpub.smtp.relay.scheduled;
 import java.io.BufferedReader;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.ThreadSafe;
@@ -20,26 +21,45 @@ import javax.mail.search.HeaderTerm;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.Constants;
+import org.springframework.jmx.export.annotation.ManagedAttribute;
+import org.springframework.jmx.export.annotation.ManagedOperation;
+import org.springframework.jmx.export.annotation.ManagedResource;
 
 /**
- * A simple timer task for cleaning auto-replied status report mails from
+ * A simple scheduled task for cleaning auto-replied status report mails from
  * postmaster by facilities of Mail Store (POP3/IMAP protocol).
  * 
  * @author sin_sin
  */
 @ThreadSafe
+// Notice: if more than one task instance exists in bean factory, only one of them
+// will be registered as the MBean. To work around with this, another object name
+// strategy needed.
+@ManagedResource(objectName = MailerDaemonReplyCleanerTask.OBJECT_NAME, description = "A simple scheduled task for cleaning reply from mailer system.")
 public class MailerDaemonReplyCleanerTask implements Runnable {
+
+    public static final String OBJECT_NAME = "com.github.sinsinpub.smtp.relay:type=Scheduler,name=ReplyCleanerTask";
+    /** Recognized as status report by kinds of conditions */
+    public static final int MATCH_MODE_STRICT = 1;
+    /** Recognized as status report just by from address contains MAILER-DAEMON */
+    public static final int MATCH_MODE_LOOSE = 2;
 
     private final static Logger logger = LoggerFactory.getLogger(MailerDaemonReplyCleanerTask.class);
 
     protected static final String DEFAULT_MAILER_DAEMON_FROM_ADDRESS = "MAILER-DAEMON";
     protected static final String DEFAULT_INBOX_FOLDER_NAME = "INBOX";
-    protected static final String DEFAULT_STATUS_REPORT_CONTENT_TYPE_HEADER = "report-type=delivery-status;";
+    protected static final String DEFAULT_STATUS_REPORT_CONTENT_TYPE_HEADER = "delivery-status;";
     protected static final String DEFAULT_AUTO_SUBMITTED_HEADER = "auto-replied";
 
     private String sessionName;
     @GuardedBy("itself")
-    private Session popSession;
+    private Session session;
+    private int matchMode = MATCH_MODE_STRICT;
+    private boolean loggingDetails = true;
+
+    private AtomicLong numMailDeleted = new AtomicLong();
+    private AtomicLong numMailExpunged = new AtomicLong();
 
     public MailerDaemonReplyCleanerTask() {
         super();
@@ -65,21 +85,21 @@ public class MailerDaemonReplyCleanerTask implements Runnable {
         Store store = null;
         Folder inbox = null;
         try {
-            store = popSession.getStore();
+            store = session.getStore();
             store.connect();
             // Only INBOX folder support for this POP3 provider
             // No auto archiving could apply :(
             inbox = store.getDefaultFolder().getFolder(
                     DEFAULT_INBOX_FOLDER_NAME);
             inbox.open(Folder.READ_WRITE);
-            HeaderTerm term = new HeaderTerm("Content-Type",
-                    DEFAULT_STATUS_REPORT_CONTENT_TYPE_HEADER);
+            HeaderTerm term = new HeaderTerm("Return-Path",
+                    DEFAULT_MAILER_DAEMON_FROM_ADDRESS);
             logger.info(
                     "Searching status report messages in folder {} of <{}>...",
                     inbox.getFullName(), getSessionName());
-            // Doing search will make a long-time data exchange with mailer server
-            Message[] messages = inbox.search(term);
+            // Searching may make a long-time data exchange with server than:
             // Message[] messages = inbox.getMessages();
+            Message[] messages = inbox.search(term);
             logger.info("Status report messages in total: {}/{}",
                     messages.length, inbox.getMessageCount());
             if (messages.length > 0) {
@@ -89,10 +109,8 @@ public class MailerDaemonReplyCleanerTask implements Runnable {
                     MimeMessage mime = (MimeMessage) message;
                     logger.debug("Checking mail #{}: {}", idx,
                             mime.getMessageID());
-                    boolean systemMail = true;
-                    systemMail &= mime.getContentType().contains(
-                            DEFAULT_STATUS_REPORT_CONTENT_TYPE_HEADER);
 
+                    boolean matched = true;
                     String from = null;
                     String[] returnPath = mime.getHeader("Return-Path");
                     if (returnPath.length >= 1) {
@@ -100,26 +118,44 @@ public class MailerDaemonReplyCleanerTask implements Runnable {
                     } else if (mime.getFrom().length >= 1) {
                         from = mime.getFrom()[0].toString();
                     }
-                    if (systemMail && from != null) {
-                        systemMail &= from.contains(DEFAULT_MAILER_DAEMON_FROM_ADDRESS);
+                    if (matched && from != null) {
+                        matched &= from.contains(DEFAULT_MAILER_DAEMON_FROM_ADDRESS);
+                    } else {
+                        // Keep default status as NOT MATCH if no address resolved
+                        matched = false;
                     }
 
-                    String[] autoFlag = mime.getHeader("Auto-Submitted");
-                    if (systemMail && autoFlag != null && autoFlag.length >= 1) {
-                        systemMail &= DEFAULT_AUTO_SUBMITTED_HEADER.equals(autoFlag[0]);
+                    // Try more conditions if necessary
+                    if (getMatchMode() == MATCH_MODE_STRICT) {
+                        if (matched) {
+                            matched &= mime.getContentType().contains(
+                                    DEFAULT_STATUS_REPORT_CONTENT_TYPE_HEADER);
+                        }
+
+                        String[] autoFlag = mime.getHeader("Auto-Submitted");
+                        if (matched && autoFlag != null && autoFlag.length >= 1) {
+                            matched &= DEFAULT_AUTO_SUBMITTED_HEADER.equals(autoFlag[0]);
+                        }
                     }
 
-                    if (systemMail) {
+                    if (matched) {
                         mime.setFlag(Flag.DELETED, true);
+                        numMailDeleted.getAndIncrement();
                         logger.debug(
                                 "Status report mail #{}:{} has been marked as DELETED",
                                 idx, mime.getMessageID());
-                        String reason = retrieveSystemMessagePart(mime);
-                        if (reason != null) {
-                            logger.info(
-                                    "Mail {} reported status: {}",
-                                    String.valueOf(idx) + ":"
-                                            + mime.getMessageID(), reason);
+                        if (isLoggingDetails()) {
+                            String reason = retrieveReasonMessageLine(mime);
+                            if (reason != null) {
+                                logger.info(
+                                        "Mail {} reported status: {}",
+                                        String.format("#%s:%s", idx,
+                                                mime.getMessageID()), reason);
+                            } else {
+                                logger.info(
+                                        "Mail #{}:{} has been deleted, but content retrieving failed.",
+                                        idx, mime.getMessageID());
+                            }
                         }
                     }
                 }
@@ -132,15 +168,18 @@ public class MailerDaemonReplyCleanerTask implements Runnable {
         } finally {
             if (inbox != null) {
                 try {
+                    int expunged = inbox.getDeletedMessageCount();
+                    // To expunges all messages marked as DELETED
                     inbox.close(true);
-                } catch (MessagingException e) {
+                    numMailExpunged.getAndAdd(expunged);
+                } catch (Exception e) {
                     logger.error(e.toString(), e);
                 }
             }
             if (store != null) {
                 try {
                     store.close();
-                } catch (MessagingException e) {
+                } catch (Exception e) {
                     // Ignore this
                 }
             }
@@ -148,14 +187,14 @@ public class MailerDaemonReplyCleanerTask implements Runnable {
     }
 
     /**
-     * Try to lookup the reason message which made by mailer daemon from the first
+     * Try to lookup the reason message which made by mailer system from the first
      * part of status report contents.
      * 
      * @param message The message of status report
-     * @return One line report of the command output by mailer daemon, null if no
+     * @return One line report of the output by mailer daemon, null if no
      *         reasonable found or exception occurs.
      */
-    private String retrieveSystemMessagePart(MimeMessage message) {
+    private String retrieveReasonMessageLine(MimeMessage message) {
         String messageId = null;
         try {
             messageId = message.getMessageID();
@@ -164,16 +203,18 @@ public class MailerDaemonReplyCleanerTask implements Runnable {
                 if (multipart.getCount() >= 1) {
                     BodyPart firstBodyPart = multipart.getBodyPart(0);
                     String body = String.valueOf(firstBodyPart.getContent());
+                    // Here go some stupid methods:
+                    // Looking for "Command output"
                     BufferedReader br = new BufferedReader(new StringReader(
                             body));
                     StringWriter sw = new StringWriter();
-                    boolean outputFound = false;
+                    boolean found = false;
                     String line = br.readLine();
                     while (line != null) {
-                        if (!outputFound && line.contains("Command output")) {
-                            outputFound = true;
+                        if (!found && line.contains("Command output")) {
+                            found = true;
                         }
-                        if (outputFound && StringUtils.isNotBlank(line)) {
+                        if (found && StringUtils.isNotBlank(line)) {
                             if (StringUtils.isNotEmpty(sw.toString())) {
                                 sw.append(" ");
                             }
@@ -182,8 +223,26 @@ public class MailerDaemonReplyCleanerTask implements Runnable {
                         line = br.readLine();
                     }
                     br.close();
+                    // Try "following"
+                    if (!found) {
+                        br = new BufferedReader(new StringReader(body));
+                        line = br.readLine();
+                        while (line != null) {
+                            if (found && StringUtils.isNotBlank(line)) {
+                                if (StringUtils.isNotEmpty(sw.toString())) {
+                                    sw.append(" ");
+                                }
+                                sw.append(StringUtils.strip(line));
+                            }
+                            if (!found && line.contains("following")) {
+                                found = true;
+                            }
+                            line = br.readLine();
+                        }
+                        br.close();
+                    }
                     sw.close();
-                    return outputFound ? sw.toString() : null;
+                    return found ? sw.toString() : null;
                 }
             }
         } catch (Exception e) {
@@ -193,20 +252,59 @@ public class MailerDaemonReplyCleanerTask implements Runnable {
         return null;
     }
 
+    @ManagedAttribute
     public String getSessionName() {
         return String.valueOf(sessionName);
     }
 
+    @ManagedAttribute
     public void setSessionName(String sessionName) {
         this.sessionName = sessionName;
     }
 
-    public Session getPopSession() {
-        return popSession;
+    public Session getSession() {
+        return session;
     }
 
-    public void setPopSession(Session popSession) {
-        this.popSession = popSession;
+    public void setSession(Session session) {
+        this.session = session;
+    }
+
+    @ManagedAttribute
+    public int getMatchMode() {
+        return matchMode;
+    }
+
+    @ManagedAttribute
+    public void setMatchMode(int matchMode) {
+        this.matchMode = matchMode;
+    }
+
+    @ManagedOperation
+    public void setMatchModeName(String matchModeName) {
+        setMatchMode(new Constants(MailerDaemonReplyCleanerTask.class).asNumber(
+                matchModeName)
+                .intValue());
+    }
+
+    @ManagedAttribute
+    public boolean isLoggingDetails() {
+        return loggingDetails;
+    }
+
+    @ManagedAttribute
+    public void setLoggingDetails(boolean loggingDetails) {
+        this.loggingDetails = loggingDetails;
+    }
+
+    @ManagedAttribute
+    public Number getNumMailDeleted() {
+        return numMailDeleted.get();
+    }
+
+    @ManagedAttribute
+    public Number getNumMailExpunged() {
+        return numMailExpunged.get();
     }
 
 }

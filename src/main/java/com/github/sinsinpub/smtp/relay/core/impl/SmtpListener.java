@@ -26,7 +26,6 @@ import org.springframework.jmx.export.annotation.ManagedAttribute;
 import org.springframework.jmx.export.annotation.ManagedResource;
 import org.subethamail.smtp.TooMuchDataException;
 import org.subethamail.smtp.helper.SimpleMessageListener;
-import org.subethamail.smtp.helper.SimpleMessageListenerAdapter;
 import org.subethamail.smtp.server.SMTPServer;
 
 import com.github.sinsinpub.smtp.relay.context.MailContext;
@@ -41,8 +40,8 @@ import com.github.sinsinpub.smtp.relay.utils.ObjectUtil;
  */
 @ThreadSafe
 @ManagedResource(objectName = SmtpListener.OBJECT_NAME, description = "A simple SMTP protocol listener and delivering component.")
-public class SmtpListener implements SimpleMessageListener, Lifecycle,
-        InitializingBean, DisposableBean {
+public class SmtpListener implements SimpleMessageListener, Lifecycle, InitializingBean,
+        DisposableBean {
 
     public static final String OBJECT_NAME = "com.github.sinsinpub.smtp.relay:type=Frontend,name=SmtpListener";
     private final static Logger logger = LoggerFactory.getLogger(SmtpListener.class);
@@ -75,8 +74,8 @@ public class SmtpListener implements SimpleMessageListener, Lifecycle,
     }
 
     public SmtpListener(InetAddress bindAddress, int port, int forwarders,
-            FromAddressRelayForwarderFactory forwardFactory, String myDomain,
-            String[] allowedFrom, String[] allowedTo, File errDump) {
+            FromAddressRelayForwarderFactory forwardFactory, String myDomain, String[] allowedFrom,
+            String[] allowedTo, File errDump) {
         this();
         this.bindAddress = bindAddress;
         this.listenPort = port;
@@ -107,8 +106,7 @@ public class SmtpListener implements SimpleMessageListener, Lifecycle,
         if (!isInitialized()) {
             return;
         }
-        this.frontendServer = new SMTPServer(new SimpleMessageListenerAdapter(
-                this));
+        this.frontendServer = new SMTPServer(new SingleDeliveryMessageListenerAdapter(this));
         if (this.bindAddress != null) {
             this.frontendServer.setBindAddress(this.bindAddress);
         }
@@ -141,8 +139,7 @@ public class SmtpListener implements SimpleMessageListener, Lifecycle,
 
     @Override
     public boolean isRunning() {
-        return this.initialized && this.frontendServer != null
-                && this.frontendServer.isRunning();
+        return this.initialized && this.frontendServer != null && this.frontendServer.isRunning();
     }
 
     public boolean accept(String from, String recipient) {
@@ -182,8 +179,7 @@ public class SmtpListener implements SimpleMessageListener, Lifecycle,
         return true;
     }
 
-    public void deliver(String from, String recipient, InputStream data)
-            throws IOException {
+    public void deliver(String from, String recipient, InputStream data) throws IOException {
         try {
             executeForwarding(from, recipient, data);
         } catch (IOException e) {
@@ -200,8 +196,8 @@ public class SmtpListener implements SimpleMessageListener, Lifecycle,
      * @param data
      * @throws IOException
      */
-    protected void executeForwarding(String from, String recipient,
-            InputStream data) throws IOException {
+    protected void executeForwarding(String from, String recipient, InputStream data)
+            throws IOException {
         isMustInitialized();
         logger.info("Forwarding message from " + from + " to " + recipient);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -210,12 +206,10 @@ public class SmtpListener implements SimpleMessageListener, Lifecycle,
         if (size == -1) {
             throw new TooMuchDataException("Received mail data larger than 2GB");
         }
-        MailContext received = new MailContext(from, recipient,
-                baos.toByteArray());
+        MailContext received = new MailContext(from, recipient, baos.toByteArray());
         MailForwardCommand command = null;
         try {
-            Validate.notNull(getForwarderFactory(),
-                    "Forwarder factory must not be null");
+            Validate.notNull(getForwarderFactory(), "Forwarder factory must not be null");
             command = getForwarderFactory().newForwardCommand(received);
         } catch (RuntimeException e) {
             logger.error("Forwarder creating failed on " + e.toString(), e);
@@ -225,9 +219,7 @@ public class SmtpListener implements SimpleMessageListener, Lifecycle,
             executorService.execute(command);
             numForwarded.getAndIncrement();
         } catch (RejectedExecutionException e) {
-            logger.error(
-                    "Concurrent forwarder thread insufficent: " + e.toString(),
-                    e);
+            logger.error("Concurrent forwarder thread insufficent: " + e.toString(), e);
             throw new IOException("Forwarder worker thread count overflow", e);
         }
     }
@@ -244,8 +236,7 @@ public class SmtpListener implements SimpleMessageListener, Lifecycle,
     }
 
     /**
-     * @throws UnsupportedOperationException if this component has not been
-     *             initialized.
+     * @throws UnsupportedOperationException if this component has not been initialized.
      */
     protected void isMustInitialized() throws UnsupportedOperationException {
         if (!this.initialized) {
@@ -279,8 +270,7 @@ public class SmtpListener implements SimpleMessageListener, Lifecycle,
         return forwarderFactory;
     }
 
-    public void setForwarderFactory(
-            FromAddressRelayForwarderFactory forwarderFactory) {
+    public void setForwarderFactory(FromAddressRelayForwarderFactory forwarderFactory) {
         this.forwarderFactory = forwarderFactory;
     }
 

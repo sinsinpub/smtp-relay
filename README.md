@@ -3,7 +3,7 @@ Simple SMTP Relay Daemon
 
 以前就搞了的一个纯Java实现的SMTP接力微服务守护程序。最近使用需求冒出来了，于是更新一下，套上一些实现再发出来。
 
-利用了[Subethasmtp](https://code.google.com/p/subethasmtp)来实现SMTP协议服务前端，将收到的消息用Java Mail API直接再转发给配置好的另一个邮件服务端。
+利用了[Subethasmtp](https://github.com/voodoodyne/subethasmtp)来实现SMTP协议服务前端，将收到的消息用Java Mail API直接再转发给配置好的另一个邮件服务端。
 就这么简单。
 由于后端邮件服务端可能(大多)需要认证、而且可能绑定了发送者地址与账号，所以实现了一个简单的分发逻辑：根据前端收到的发送者邮箱地址来分发给不同配置(如不同认证账号)的后端。
 
